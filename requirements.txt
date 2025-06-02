@@ -44,3 +44,4 @@ types-psycopg2==2.9.21.20250516
 typing_extensions==4.13.2
 tzdata==2025.1
 urllib3==2.4.0
+

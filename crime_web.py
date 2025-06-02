@@ -1,33 +1,34 @@
 import streamlit as st
-import psycopg2
 import pandas as pd
 import plotly.express as px
+from sqlalchemy import create_engine
 
-# Set page layout
+# Page settings
 st.set_page_config(layout="wide")
 st.title("PostgreSQL Crime Data Explorer")
 
-# PostgreSQL connection
+# Database connection using SQLAlchemy
 @st.cache_resource
 def connect_db():
-    return psycopg2.connect(
-        host="localhost",
-        database="crime_data",
-        user="bindu",
-        password="8282"
+    db_url = (
+        f"postgresql+psycopg2://{st.secrets['DB_USER']}:"
+        f"{st.secrets['DB_PASSWORD']}@{st.secrets['DB_HOST']}:"
+        f"{st.secrets.get('DB_PORT', '5432')}/"
+        f"{st.secrets['DB_NAME']}"
     )
+    return create_engine(db_url)
 
 conn = connect_db()
 
 # SQL Query input
 query = st.text_area("Enter your SQL query:")
 
-# Run query and store result
 if st.button("Run Query"):
     try:
-        df = pd.read_sql(query, conn)
-        st.session_state['query_result'] = df  # Save in session
-        st.success("Query executed successfully.")
+        with st.spinner("Running query..."):
+            df = pd.read_sql(query, conn)
+            st.session_state['query_result'] = df
+            st.success("Query executed successfully.")
     except Exception as e:
         st.error(f"❌ Error: {e}")
 
@@ -36,11 +37,10 @@ if 'query_result' in st.session_state:
     df = st.session_state['query_result']
     st.dataframe(df)
 
-    # Download CSV
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("Download CSV", csv, "query_result.csv", "text/csv")
 
-    # Visualization Options
+    # Visualization
     st.subheader("📊 Visualization")
     col1, col2 = st.columns(2)
     with col1:
